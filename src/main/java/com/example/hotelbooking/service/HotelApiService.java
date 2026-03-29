@@ -11,13 +11,13 @@ public class HotelApiService {
 
     public List<Room> fetchLiveHotels() {
         // Updated URL specifically for the Api Dojo Booking API
-        String url = "https://apidojo-booking-v1.p.rapidapi.com/properties/list?offset=0&arrival_date=2026-05-09&departure_date=2026-05-10&guest_qty=1&dest_ids=-2092174&room_qty=1&search_type=city";
+        String url = "YOUR_RAPIDAPI_URL";
         
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         
         // Ensure this matches your dashboard exactly
-        headers.set("X-RapidAPI-Key", "e442d71e3cmsh331c821beff5f8ap18d802jsnd177610eed33");
+        headers.set("X-RapidAPI-Key", "YOUR_RAPID_API_KEY");
         headers.set("X-RapidAPI-Host", "apidojo-booking-v1.p.rapidapi.com");
 
         HttpEntity<String> entity = new HttpEntity<>(headers);
