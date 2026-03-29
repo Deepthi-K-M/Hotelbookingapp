@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Admin Dashboard - Luxury Stay</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        body { background-color: #f0f2f5; }
+        .admin-header { background-color: #0d47a1; color: white; padding: 2rem 0; margin-bottom: 2rem; border-radius: 0 0 20px 20px; }
+        .revenue-card { background: linear-gradient(45deg, #0d47a1, #1976d2); color: white; border: none; border-radius: 15px; }
+        .stat-card { border: none; border-radius: 15px; }
+        .table-container { background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 2rem; }
+        .chart-container { background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 2rem; }
+        .btn-primary { background-color: #0d47a1; border: none; }
+        .btn-primary:hover { background-color: #0a3d8d; }
+        .section-title { color: #0d47a1; font-weight: bold; margin-bottom: 1.5rem; display: flex; align-items: center; }
+        .section-title i { margin-right: 10px; }
+        .staff-card { border: none; border-radius: 12px; background: #f8faff; border-left: 4px solid #0d47a1; transition: 0.2s; }
+        .staff-card:hover { box-shadow: 0 4px 12px rgba(13,71,161,0.12); }
+        .role-badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; background: #e3f2fd; color: #0d47a1; font-weight: 600; }
+        .avatar { width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(135deg,#0d47a1,#1976d2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.1rem; flex-shrink: 0; }
+    </style>
+</head>
+<body class="pb-5">
+
+<div class="admin-header shadow">
+    <div class="container d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="fw-bold mb-0">Admin Dashboard</h1>
+            <p class="mb-0 opacity-75">Manage inventory, staff and monitor performance</p>
+        </div>
+        <form th:action="@{/logout}" method="post" class="m-0">
+            <button type="submit" class="btn btn-outline-light btn-sm px-3">Logout</button>
+        </form>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- Stat cards -->
+    <div class="row mb-4 g-3">
+        <div class="col-md-3">
+            <div class="card revenue-card shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-uppercase mb-0 small fw-bold">Total Revenue</h6>
+                        <i class="bi bi-currency-dollar fs-4"></i>
+                    </div>
+                    <h2 class="display-6 fw-bold mb-0" th:text="${'$' + #numbers.formatDecimal(totalRevenue, 1, 2)}">$0.00</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card shadow-sm" style="background:linear-gradient(45deg,#1565c0,#1e88e5);color:white;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-uppercase mb-0 small fw-bold">Total Bookings</h6>
+                        <i class="bi bi-calendar-check fs-4"></i>
+                    </div>
+                    <h2 class="display-6 fw-bold mb-0" th:text="${bookings.size()}">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card shadow-sm" style="background:linear-gradient(45deg,#0277bd,#039be5);color:white;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-uppercase mb-0 small fw-bold">Total Hotels</h6>
+                        <i class="bi bi-building fs-4"></i>
+                    </div>
+                    <h2 class="display-6 fw-bold mb-0" th:text="${rooms.size()}">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card shadow-sm" style="background:linear-gradient(45deg,#00695c,#00897b);color:white;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-uppercase mb-0 small fw-bold">Total Staff</h6>
+                        <i class="bi bi-people-fill fs-4"></i>
+                    </div>
+                    <h2 class="display-6 fw-bold mb-0" th:text="${staffList.size()}">0</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row mb-4 g-3">
+        <div class="col-md-7">
+            <div class="chart-container">
+                <h5 class="section-title"><i class="bi bi-bar-chart-fill"></i>Bookings per Hotel</h5>
+                <canvas id="bookingsChart" height="110"></canvas>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="chart-container">
+                <h5 class="section-title"><i class="bi bi-pie-chart-fill"></i>Revenue Share</h5>
+                <canvas id="revenueChart" height="160"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add room -->
+    <div class="card p-4 mb-4 shadow-sm border-0" style="border-radius:15px;">
+        <h5 class="card-title fw-bold mb-3" style="color:#0d47a1;">Add New Hotel / Room Type</h5>
+        <form th:action="@{/admin/add-room}" method="post" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted">HOTEL NAME</label>
+                <input type="text" name="roomName" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted">PRICE PER NIGHT</label>
+                <input type="number" step="0.01" name="price" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted">TOTAL INVENTORY</label>
+                <input type="number" name="totalRooms" class="form-control" min="1" required>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100 py-2">Add Hotel</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Inventory table -->
+    <div class="table-container">
+        <h5 class="section-title"><i class="bi bi-box-seam"></i>Inventory Management</h5>
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr><th>Hotel/Room Name</th><th>Price</th><th>Booked / Total</th><th>Status</th><th class="text-end">Actions</th></tr>
+            </thead>
+            <tbody>
+                <tr th:each="room : ${rooms}">
+                    <td th:text="${room.name}" class="fw-bold"></td>
+                    <td th:text="${'$' + #numbers.formatDecimal(room.price, 1, 2)}"></td>
+                    <td th:text="${room.bookedCount + ' / ' + room.totalRooms}"></td>
+                    <td>
+                        <span th:class="${(room.totalRooms - room.bookedCount) > 0} ? 'badge bg-success' : 'badge bg-danger'"
+                              th:text="${(room.totalRooms - room.bookedCount) > 0 ? 'Active' : 'Full'}"></span>
+                    </td>
+                    <td class="text-end">
+                        <form th:if="${room.bookedCount > 0}" th:action="@{/admin/cancel/{id}(id=${room.id})}" method="post">
+                            <button type="submit" class="btn btn-outline-warning btn-sm">Cancel One</button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Booking history -->
+    <div class="table-container">
+        <h5 class="section-title"><i class="bi bi-clock-history"></i>Recent Booking History</h5>
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr><th>ID</th><th>Guest</th><th>Hotel</th><th>Check-in</th><th>Check-out</th><th>Booked On</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+                <tr th:each="booking : ${bookings}">
+                    <td th:text="${booking.id}" class="text-muted small"></td>
+                    <td th:text="${booking.user.username}" class="fw-bold"></td>
+                    <td th:text="${booking.room.name}"></td>
+                    <td th:text="${booking.checkInDate}" class="text-primary fw-bold"></td>
+                    <td th:text="${booking.checkOutDate != null ? booking.checkOutDate : 'N/A'}"></td>
+                    <td th:text="${#temporals.format(booking.bookingDate, 'dd MMM yyyy HH:mm')}"></td>
+                    <td class="text-success fw-bold" th:text="${'$' + #numbers.formatDecimal(booking.totalCost, 1, 2)}"></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(bookings)}">
+                    <td colspan="7" class="text-center text-muted py-4">No bookings found.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- STAFF MANAGEMENT -->
+    <div id="staff" class="table-container">
+        <h5 class="section-title"><i class="bi bi-people-fill"></i>Staff Management</h5>
+
+        <!-- Add staff form -->
+        <div class="card p-4 mb-4 border-0" style="background:#f8faff;border-radius:12px;">
+            <h6 class="fw-bold mb-3" style="color:#0d47a1;">
+                <i class="bi bi-person-plus me-2"></i>Add New Staff Member
+            </h6>
+            <form th:action="@{/admin/add-staff}" method="post" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted">FULL NAME</label>
+                    <input type="text" name="staffName" class="form-control" placeholder="e.g. John Smith" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold text-muted">ROLE</label>
+                    <select name="staffRole" class="form-select" required>
+                        <option value="">Select role</option>
+                        <option value="Manager">Manager</option>
+                        <option value="Receptionist">Receptionist</option>
+                        <option value="Housekeeping">Housekeeping</option>
+                        <option value="Concierge">Concierge</option>
+                        <option value="Security">Security</option>
+                        <option value="Chef">Chef</option>
+                        <option value="Maintenance">Maintenance</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold text-muted">PHONE</label>
+                    <input type="text" name="staffPhone" class="form-control" placeholder="+1 555 0100" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold text-muted">EMAIL (optional)</label>
+                    <input type="email" name="staffEmail" class="form-control" placeholder="staff@hotel.com">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold text-muted">ASSIGN TO HOTEL</label>
+                    <select name="hotelId" class="form-select" required>
+                        <option value="">Select hotel</option>
+                        <option th:each="room : ${rooms}" th:value="${room.id}" th:text="${room.name}"></option>
+                    </select>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100 py-2">Add</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Staff cards -->
+        <div th:if="${#lists.isEmpty(staffList)}" class="text-center text-muted py-4">
+            <i class="bi bi-people fs-1 d-block mb-2 opacity-25"></i>
+            No staff members added yet.
+        </div>
+
+        <div class="row g-3" th:if="${!#lists.isEmpty(staffList)}">
+            <div class="col-md-6" th:each="staff : ${staffList}">
+                <div class="card staff-card p-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar" th:text="${#strings.toUpperCase(#strings.substring(staff.name,0,1))}">J</div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="fw-bold mb-1" th:text="${staff.name}">Name</h6>
+                                    <span class="role-badge" th:text="${staff.role}">Role</span>
+                                </div>
+                                <form th:action="@{/admin/delete-staff/{id}(id=${staff.id})}" method="post">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm"
+                                            onclick="return confirm('Remove this staff member?')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                            <div class="mt-2 small text-muted">
+                                <span class="me-3"><i class="bi bi-telephone me-1"></i><span th:text="${staff.phone}"></span></span>
+                                <span th:if="${staff.email != null and !#strings.isEmpty(staff.email)}">
+                                    <i class="bi bi-envelope me-1"></i><span th:text="${staff.email}"></span>
+                                </span>
+                            </div>
+                            <div class="mt-1 small">
+                                <i class="bi bi-building me-1 text-primary"></i>
+                                <span class="text-primary fw-bold" th:text="${staff.room.name}">Hotel</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script th:inline="javascript">
+    const roomNames    = /*[[${rooms.![name]}]]*/ [];
+    const bookedCounts = /*[[${rooms.![bookedCount]}]]*/ [];
+    const revenues     = /*[[${rooms.![price * bookedCount]}]]*/ [];
+
+    new Chart(document.getElementById('bookingsChart'), {
+        type: 'bar',
+        data: { labels: roomNames, datasets: [{ label: 'Bookings', data: bookedCounts,
+            backgroundColor: 'rgba(13,71,161,0.75)', borderColor: '#0d47a1', borderWidth: 1, borderRadius: 6 }] },
+        options: { responsive: true, plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+
+    const palette = ['#0d47a1','#1565c0','#1976d2','#1e88e5','#2196f3','#42a5f5','#64b5f6','#90caf9'];
+    new Chart(document.getElementById('revenueChart'), {
+        type: 'doughnut',
+        data: { labels: roomNames, datasets: [{ data: revenues, backgroundColor: palette, borderWidth: 2 }] },
+        options: { responsive: true, plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+            tooltip: { callbacks: { label: ctx => ' $' + ctx.parsed.toFixed(2) } }
+        }}
+    });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

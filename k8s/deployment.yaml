@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hotelbooking-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hotelbooking
+  template:
+    metadata:
+      labels:
+        app: hotelbooking
+    spec:
+      containers:
+        - name: hotelbooking
+          image: hotelbooking:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
